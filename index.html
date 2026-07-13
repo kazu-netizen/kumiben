@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>くみ弁 記録</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FF0000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="くみ弁">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --ink:#12233B; --soft:#4A5D75; --paper:#fff; --field:#F2F5F9; --line:#D6DEE8;
+  --up:#0F7A4D; --upbg:#E4F4EC; --down:#1D5FBF; --downbg:#E6EEFA;
+  --gold:#E8A33D; --goldbg:#FDF3E3;
+  --sh:0 2px 0 rgba(18,35,59,.14);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+  background:var(--paper);color:var(--ink);font-size:19px;line-height:1.5;font-weight:700;
+  padding-bottom:255px;-webkit-font-smoothing:antialiased}
+.tab{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+button{font:inherit;color:inherit}
+
+header{position:sticky;top:0;z-index:30;background:var(--paper);border-bottom:3px solid var(--ink);
+  padding:12px;display:flex;align-items:center;gap:7px;padding-top:calc(12px + env(safe-area-inset-top))}
+.logo{width:32px;height:32px;border-radius:8px;flex:0 0 32px}
+.today{font-size:21px;font-weight:900;min-width:0;white-space:nowrap}
+.today em{font-style:normal;font-size:12px;color:var(--gold);display:block;margin-top:-2px}
+.hbtn{background:var(--field);border:2px solid var(--line);border-radius:12px;
+  padding:9px 10px;font-size:14px;min-height:46px;white-space:nowrap;flex:0 0 auto}
+.hbtn.now{margin-left:auto}
+.hbtn:disabled{opacity:.3}
+
+h2{font-size:20px;font-weight:900;margin:22px 16px 10px;display:flex;align-items:center;gap:8px}
+h2 i{width:6px;height:22px;background:var(--gold);border-radius:3px;font-style:normal}
+h2 u{margin-left:auto;font-size:13px;font-weight:700;color:var(--soft);text-decoration:none}
+
+/* ── 弁当カード ── */
+.card{margin:0 16px 12px;background:var(--field);border:2px solid var(--line);
+  border-radius:18px;padding:13px;position:relative}
+.chead{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.price{background:var(--paper);border:2px solid var(--ink);border-radius:12px;
+  padding:8px 13px;font-size:23px;font-weight:900;display:flex;align-items:center;gap:1px}
+.price s{font-size:15px;color:var(--soft);text-decoration:none}
+.price:active{background:var(--field)}
+.tagline{font-size:14px;color:var(--soft);font-weight:700}
+.del{margin-left:auto;width:44px;height:44px;border-radius:12px;border:2px solid var(--line);
+  background:var(--paper);color:var(--soft);font-size:18px}
+
+.row{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.rlab{width:62px;flex:0 0 62px;font-size:14px;font-weight:900;line-height:1.25}
+.rlab s{display:block;font-size:11px;color:var(--soft);font-weight:700;text-decoration:none}
+.sbtn{width:60px;height:60px;flex:0 0 60px;border-radius:16px;border:none;
+  background:var(--ink);color:#fff;font-size:30px;font-weight:900;box-shadow:var(--sh);
+  display:flex;align-items:center;justify-content:center;transition:transform .06s}
+.sbtn:active{transform:translateY(2px);box-shadow:none}
+.sbtn.mi{background:var(--paper);color:var(--ink);border:2px solid var(--ink)}
+.sbtn:disabled{opacity:.26}
+.qty{flex:1;height:60px;border-radius:15px;background:var(--paper);border:2px solid var(--line);
+  font-size:29px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:3px}
+.qty s{font-size:14px;font-weight:700;color:var(--soft);text-decoration:none}
+.row.made .sbtn{background:var(--gold);box-shadow:0 2px 0 #B87F27}
+.row.made .sbtn.mi{background:var(--paper);color:var(--gold);border-color:var(--gold);box-shadow:none}
+.row.made .qty{border-color:var(--gold);background:var(--goldbg)}
+
+.foot2{display:flex;align-items:center;gap:8px;padding-top:11px;border-top:2px solid var(--line);
+  font-size:15px;font-weight:900}
+.foot2 .lo{color:var(--soft)}
+.foot2 .lo b{color:var(--down)}
+.foot2 .lo.zero b{color:var(--up)}
+.foot2 .amt{margin-left:auto;font-size:20px;font-weight:900;color:var(--soft)}
+.foot2 .amt.on{color:var(--up)}
+
+.dash{margin:0 16px 18px;width:calc(100% - 32px);background:var(--paper);
+  border:2.5px dashed var(--soft);border-radius:18px;padding:16px;font-size:18px;
+  font-weight:900;min-height:64px}
+.dash.thin{border-color:var(--line);color:var(--soft);font-size:17px;min-height:58px;padding:13px}
+.dash:active{background:var(--field)}
+
+.cost{margin:0 16px 12px;background:var(--field);border:2px solid var(--line);
+  border-radius:18px;padding:13px;display:flex;align-items:center;gap:12px}
+.cost .l{font-size:19px;font-weight:900}
+.cost .l i{display:block;font-size:13px;font-weight:700;color:var(--soft);font-style:normal}
+.cost .v{margin-left:auto;background:var(--paper);border:2px solid var(--line);border-radius:14px;
+  min-width:128px;height:60px;font-size:24px;font-weight:900;
+  display:flex;align-items:center;justify-content:flex-end;padding:0 13px;gap:2px}
+.cost .v s{font-size:15px;color:var(--soft);text-decoration:none}
+.note{margin:0 16px 18px;font-size:13px;font-weight:700;color:var(--soft);line-height:1.6}
+
+footer{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--paper);
+  border-top:3px solid var(--ink);padding:11px 16px calc(11px + env(safe-area-inset-bottom))}
+.goal{background:var(--goldbg);border-radius:11px;padding:8px 11px;font-size:14px;
+  font-weight:900;color:#8A5A11;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.goal.off{display:none}
+.goal .bar{flex:1;height:8px;background:#F0D9AE;border-radius:4px;overflow:hidden}
+.goal .bar b{display:block;height:100%;background:var(--gold);border-radius:4px;width:0;
+  transition:width .5s cubic-bezier(.3,1.2,.5,1)}
+.fl{font-size:15px;color:var(--soft);display:flex;align-items:baseline;gap:8px}
+.fl s{font-size:12px;text-decoration:none;color:var(--soft);opacity:.85}
+.fr{display:flex;align-items:flex-end;gap:10px;margin-top:1px}
+.big{font-size:50px;font-weight:900;letter-spacing:-.02em;line-height:1}
+.dlt{margin-left:auto;padding:8px 12px;border-radius:999px;font-size:16px;font-weight:900;
+  white-space:nowrap;transition:transform .18s cubic-bezier(.3,1.6,.5,1)}
+.dlt.up{background:var(--upbg);color:var(--up)}
+.dlt.dn{background:var(--downbg);color:var(--down)}
+.dlt.off{display:none}
+.dlt.pop{transform:scale(1.13)}
+.sv{margin-top:10px;width:100%;min-height:62px;border:none;border-radius:16px;
+  background:var(--up);color:#fff;font-size:22px;font-weight:900;box-shadow:0 3px 0 #0A5637}
+.sv:active{transform:translateY(3px);box-shadow:none}
+.sv.ok{background:var(--ink);box-shadow:0 3px 0 #000}
+
+.sheet{position:fixed;inset:0;z-index:60;display:none}
+.sheet.on{display:block}
+.veil{position:absolute;inset:0;background:rgba(18,35,59,.5)}
+.pane{position:absolute;left:0;right:0;bottom:0;background:var(--paper);
+  border-radius:24px 24px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+  animation:up .2s ease-out;max-height:88vh;overflow:auto}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.pane h3{font-size:19px;font-weight:900;margin-bottom:9px}
+.pv{background:var(--field);border:2px solid var(--line);border-radius:14px;height:66px;
+  display:flex;align-items:center;justify-content:flex-end;padding:0 17px;
+  font-size:34px;font-weight:900;margin-bottom:11px}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.keys button{height:62px;border-radius:14px;border:2px solid var(--line);
+  background:var(--paper);font-size:27px;font-weight:900}
+.keys button:active{background:var(--field)}
+.keys .ok{grid-column:span 3;background:var(--up);color:#fff;border:none;font-size:20px;
+  box-shadow:0 3px 0 #0A5637}
+.keys .bs{color:var(--soft)}
+
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:6px}
+.cal .wd{text-align:center;font-size:13px;color:var(--soft);padding:4px 0}
+.cal .d{aspect-ratio:1;border-radius:12px;border:2px solid var(--line);background:var(--paper);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  font-size:15px;font-weight:900}
+.cal .d s{font-size:11px;text-decoration:none;line-height:1}
+.cal .d.done{background:var(--upbg);border-color:var(--up);color:var(--up)}
+.cal .d.miss{border-color:var(--gold);border-style:dashed;color:var(--gold)}
+.cal .d.rest{background:var(--field);color:#AEBCCB;border-color:var(--field)}
+.cal .d.sel{outline:4px solid var(--ink);outline-offset:-1px}
+.cal .d.fut{opacity:.28}
+.legend{display:flex;gap:12px;margin:11px 0 3px;font-size:13px;font-weight:700;
+  color:var(--soft);flex-wrap:wrap}
+.legend b{display:inline-flex;align-items:center;gap:4px}
+.legend u{width:13px;height:13px;border-radius:4px;text-decoration:none;display:inline-block}
+.calhead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.calhead h3{flex:1;text-align:center}
+.calhead button{width:52px;height:46px;border-radius:12px;border:2px solid var(--line);
+  background:var(--field);font-size:17px;font-weight:900}
+
+.rc{text-align:center;padding:6px 0 2px}
+.rc .amt{font-size:50px;font-weight:900;color:var(--up);margin:10px 0 3px}
+.rc p{font-size:16px;color:var(--soft);margin-bottom:14px}
+.rcb{display:flex;gap:10px}
+.rcb button{flex:1;min-height:62px;border-radius:16px;font-size:19px;font-weight:900;border:none}
+.rcb .y{background:var(--up);color:#fff;box-shadow:0 3px 0 #0A5637}
+.rcb .n{background:var(--paper);border:2px solid var(--line);color:var(--soft)}
+.scan{height:110px;display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:var(--soft);gap:10px}
+.spin{width:24px;height:24px;border:3px solid var(--line);border-top-color:var(--ink);
+  border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.scr{display:none}.scr.on{display:block}
+.saved{margin:12px 16px 0;background:var(--upbg);border:2px solid var(--up);border-radius:14px;
+  padding:11px 13px;display:none;align-items:center;gap:9px;font-size:15px;font-weight:900;color:var(--up)}
+.saved.on{display:flex}
+.saved button{margin-left:auto;background:var(--paper);border:2px solid var(--line);
+  border-radius:10px;padding:8px 12px;font-size:14px;font-weight:900;color:var(--soft);min-height:42px}
+.rest-note{margin:12px 16px 0;background:var(--field);border:2px solid var(--line);border-radius:14px;
+  padding:11px 13px;display:none;align-items:center;gap:9px;font-size:15px;font-weight:900;color:var(--soft)}
+.rest-note.on{display:flex}
+.rest-note button{margin-left:auto;background:var(--paper);border:2px solid var(--line);
+  border-radius:10px;padding:8px 12px;font-size:14px;font-weight:900;min-height:42px}
+.offbar{margin:12px 16px 0;background:var(--downbg);border:2px solid var(--down);border-radius:14px;
+  padding:11px 13px;display:none;font-size:14px;font-weight:900;color:var(--down)}
+.offbar.on{display:block}
+.cfm{text-align:center;padding:6px 0 2px}
+.cfm p{font-size:19px;font-weight:900;margin-bottom:6px}
+.cfm s{display:block;font-size:15px;color:var(--soft);text-decoration:none;margin-bottom:16px}
+.cfmb{display:flex;gap:10px}
+.cfmb button{flex:1;min-height:62px;border-radius:16px;font-size:18px;font-weight:900;border:none}
+.cfmb .no{background:var(--paper);border:2px solid var(--line);color:var(--soft)}
+.cfmb .yes{background:var(--down);color:#fff;box-shadow:0 3px 0 #14448C}
+
+.hero{margin:16px;padding:20px 17px;border-radius:22px;background:var(--ink);color:#fff}
+.hero .k{font-size:15px;opacity:.72}
+.hero .v{font-size:48px;font-weight:900;letter-spacing:-.02em;margin:1px 0 13px}
+.hero .v s{font-size:24px;text-decoration:none}
+.cmp{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.11);
+  border-radius:14px;padding:11px 13px}
+.cmp .a{font-size:14px;opacity:.8}
+.cmp .a b{display:block;font-size:19px;opacity:1;margin-top:1px}
+.cmp .b2{margin-left:auto;text-align:right}
+.cmp .b2 b{font-size:22px;color:#6FE0A8}
+.cmp .b2 b.dn{color:#9DC6FF}
+.cmp .b2 s{display:block;font-size:13px;opacity:.85;text-decoration:none}
+.race{margin-top:10px;background:rgba(255,255,255,.11);border-radius:14px;padding:12px 13px}
+.race.off{display:none}
+.race .t{font-size:14px;opacity:.8;margin-bottom:7px}
+.race .t b{color:var(--gold);font-size:17px}
+.rbar{height:11px;background:rgba(255,255,255,.16);border-radius:6px;position:relative;overflow:hidden}
+.rbar b{position:absolute;inset:0 auto 0 0;background:#6FE0A8;border-radius:6px;width:0;
+  transition:width 1s cubic-bezier(.3,1.1,.5,1)}
+
+.box{margin:0 16px 12px;padding:14px;border:2px solid var(--line);border-radius:18px}
+.box h3{font-size:18px;font-weight:900}
+.box p{font-size:13px;color:var(--soft);margin:2px 0 10px}
+.cbox{position:relative;width:100%}
+.cbox canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px}
+.st{background:var(--field);border:2px solid var(--line);border-radius:16px;padding:13px}
+.st s{font-size:13px;color:var(--soft);text-decoration:none;display:block}
+.st b{font-size:26px;font-weight:900;display:block;margin-top:2px}
+.st.warn{background:var(--goldbg);border-color:#F0D9AE}
+.st.warn b{color:#8A5A11}
+
+.badges{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:0 16px 18px}
+.bg{aspect-ratio:1;border-radius:16px;background:var(--field);border:2px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font-size:10.5px;font-weight:900;color:var(--soft);text-align:center;padding:4px;line-height:1.25}
+.bg span{font-size:26px;filter:grayscale(1);opacity:.32}
+.bg.got{background:var(--goldbg);border-color:var(--gold);color:#8A5A11}
+.bg.got span{filter:none;opacity:1}
+
+.rank .r{display:flex;align-items:center;gap:11px;padding:13px 4px;border-bottom:2px solid var(--line)}
+.rank .r:last-child{border:none}
+.rank .no{width:32px;height:32px;border-radius:10px;background:var(--field);
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900}
+.rank .r:first-child .no{background:var(--gold);color:#fff}
+.rank .lo{font-size:12px;color:var(--soft);font-weight:700}
+.rank .ct{margin-left:auto;font-size:19px;font-weight:900;text-align:right}
+.rank .ct s{font-size:13px;color:var(--soft);text-decoration:none}
+
+nav{position:fixed;bottom:0;left:0;right:0;z-index:41;display:none;background:var(--paper);
+  border-top:3px solid var(--ink);padding-bottom:env(safe-area-inset-bottom)}
+nav.on{display:flex}
+nav button{flex:1;min-height:66px;border:none;background:none;font-size:14px;font-weight:900;
+  color:var(--soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+nav button s{font-size:24px;text-decoration:none}
+nav button.sel{color:var(--ink)}
+
+.toast{position:fixed;left:16px;right:16px;top:14px;z-index:70;background:var(--gold);color:#fff;
+  border-radius:16px;padding:14px;font-size:17px;font-weight:900;text-align:center;
+  transform:translateY(-180%);transition:transform .35s cubic-bezier(.3,1.5,.5,1)}
+.toast.on{transform:translateY(0)}
+.cele{position:fixed;inset:0;z-index:80;background:rgba(18,35,59,.94);color:#fff;display:none;
+  flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;padding:30px}
+.cele.on{display:flex}
+.cele .ic{font-size:78px;animation:bo .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes bo{0%{transform:scale(0)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+.cele h1{font-size:29px;font-weight:900}
+.cele p{font-size:18px;opacity:.85}
+.cele button{margin-top:16px;background:#fff;color:var(--ink);border:none;border-radius:14px;
+  padding:15px 38px;font-size:19px;font-weight:900}
+
+.boot{position:fixed;inset:0;z-index:90;background:var(--paper);display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:30px}
+.boot.off{display:none}
+.boot img{width:110px;height:110px;border-radius:24px}
+.boot p{font-size:17px;color:var(--soft)}
+.boot button{background:var(--up);color:#fff;border:none;border-radius:16px;
+  padding:16px 34px;font-size:19px;font-weight:900;box-shadow:0 3px 0 #0A5637;min-height:62px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="boot" id="boot">
+  <img src="icon-192.png" alt="くみ弁">
+  <p id="bootMsg">よみこみ中…</p>
+  <div class="spin" id="bootSpin"></div>
+  <button id="bootBtn" style="display:none">もう一度</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="cele" id="cele">
+  <div class="ic" id="cIc">🎊</div>
+  <h1 id="cT"></h1><p id="cP"></p>
+  <button id="celeClose">やったー！</button>
+</div>
+
+<!-- ══ 記録 ══ -->
+<section class="scr on" id="s-in">
+  <header>
+    <img class="logo" src="icon-180.png" alt="">
+    <div class="today"><span id="dLabel">—</span><em id="streak"></em></div>
+    <button class="hbtn now" id="calBtn">📅 日付</button>
+    <button class="hbtn" id="undo" disabled>戻す</button>
+  </header>
+
+  <div class="offbar" id="offbar">📶 まだ 送れていません。電波が入ったら 自動で送ります</div>
+  <div class="saved" id="savedBar">
+    <span>✓ この日は記録済み。直したら もう一度 保存してください</span>
+    <button id="delDay">この日を消す</button>
+  </div>
+  <div class="rest-note" id="restBar">
+    <span>この日は定休日です</span>
+    <button id="unrest">記録する</button>
+  </div>
+
+  <h2><i></i>お弁当<u>値段を押すと直せる</u></h2>
+  <div id="menus"></div>
+  <button class="dash thin" id="addBento">＋ 値段の違うお弁当を追加</button>
+
+  <h2><i></i>使ったお金</h2>
+  <div class="cost">
+    <div class="l">食材<i>しょくざい</i></div>
+    <button class="v" data-pad="food"><span class="tab">0</span><s>円</s></button>
+  </div>
+  <button class="dash" id="camBtn">📷 レシートを撮る<br><s style="font-size:13px;color:var(--soft);text-decoration:none;font-weight:700">撮るだけで金額が入ります</s></button>
+  <input type="file" id="cam" accept="image/*" capture="environment" style="display:none">
+  <div class="cost">
+    <div class="l">人のお金<i>バイト代など</i></div>
+    <button class="v" data-pad="labor"><span class="tab">0</span><s>円</s></button>
+  </div>
+  <div class="cost">
+    <div class="l">その他<i>ガス代など</i></div>
+    <button class="v" data-pad="other"><span class="tab">0</span><s>円</s></button>
+  </div>
+
+  <button class="dash thin" id="restBtn">🛌 この日は お休み にする</button>
+
+  <footer>
+    <div class="goal" id="goal">
+      <span>🏁 先月ごえ</span>
+      <div class="bar"><b id="gBar"></b></div>
+      <span class="tab" id="gTxt"></span>
+    </div>
+    <div class="fl">今日の もうけ <s id="fxNote"></s></div>
+    <div class="fr">
+      <div class="big tab" id="profit">¥0</div>
+      <div class="dlt up" id="delta"></div>
+    </div>
+    <button class="sv" id="save">✓ 保存する</button>
+  </footer>
+</section>
+
+<!-- ══ せいせき ══ -->
+<section class="scr" id="s-dash">
+  <header>
+    <button class="hbtn" id="prevM">◀</button>
+    <div class="today" id="mLabel">—</div>
+    <button class="hbtn now" id="nextM">▶</button>
+  </header>
+
+  <div class="hero">
+    <div class="k">今月の もうけ</div>
+    <div class="v tab"><s>¥</s><span id="mt">0</span></div>
+    <div class="cmp">
+      <div class="a">先月の今ごろ<b class="tab" id="pSame">¥0</b></div>
+      <div class="b2"><b class="tab" id="pDiff">±¥0</b><s id="pMsg">　</s></div>
+    </div>
+    <div class="race" id="race">
+      <div class="t">先月の合計まで あと <b class="tab" id="rLeft">¥0</b></div>
+      <div class="rbar"><b id="rBar"></b></div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="st"><s>売上</s><b class="tab" id="sSales">¥0</b></div>
+    <div class="st"><s>売れた数</s><b class="tab" id="sSold">0<span style="font-size:15px">個</span></b></div>
+    <div class="st warn"><s>捨てた数</s><b class="tab" id="sWaste">0<span style="font-size:15px">個</span></b></div>
+    <div class="st warn"><s>捨てた分の損</s><b class="tab" id="sLoss">¥0</b></div>
+  </div>
+
+  <div class="box">
+    <h3>積み上がり</h3><p>太い線が今月。薄い線が先月。</p>
+    <div class="cbox" style="height:195px"><canvas id="c1"></canvas></div>
+  </div>
+  <div class="box">
+    <h3>日ごとの もうけ</h3><p>今日の棒はオレンジ色。</p>
+    <div class="cbox" style="height:165px"><canvas id="c2"></canvas></div>
+  </div>
+
+  <h2><i></i>集めたメダル</h2>
+  <div class="badges" id="badges">
+    <div class="bg" data-badge="streak7"><span>🔥</span>7日連続</div>
+    <div class="bg" data-badge="soldout"><span>🎯</span>完売した日</div>
+    <div class="bg" data-badge="overPrev"><span>📈</span>先月ごえ</div>
+    <div class="bg" data-badge="best"><span>🏆</span>自己最高</div>
+    <div class="bg" data-badge="streak30"><span>🌟</span>30日連続</div>
+    <div class="bg" data-badge="days100"><span>💯</span>100日記録</div>
+    <div class="bg" data-badge="sales80"><span>💎</span>月 80万<br>売上</div>
+    <div class="bg" data-badge="year1"><span>👑</span>1年継続</div>
+  </div>
+
+  <h2><i></i>値段べつ</h2>
+  <div class="rank" id="rank" style="margin:0 16px 20px"></div>
+
+  <h2><i></i>毎月かかるお金<u>家賃・光熱費など</u></h2>
+  <div class="cost">
+    <div class="l">家賃<i>1か月分</i></div>
+    <button class="v" data-pad="fx_rent"><span class="tab">0</span><s>円</s></button>
+  </div>
+  <div class="cost">
+    <div class="l">光熱費<i>電気・水道・ガス</i></div>
+    <button class="v" data-pad="fx_util"><span class="tab">0</span><s>円</s></button>
+  </div>
+  <div class="cost">
+    <div class="l">その他<i>毎月かかるもの</i></div>
+    <button class="v" data-pad="fx_other"><span class="tab">0</span><s>円</s></button>
+  </div>
+  <p class="note" id="fxNote2">　</p>
+</section>
+
+<!-- ══ テンキー ══ -->
+<div class="sheet" id="padS">
+  <div class="veil" data-x></div>
+  <div class="pane">
+    <h3 id="padT">食材</h3>
+    <div class="pv tab"><span id="padV">0</span><s id="padU" style="font-size:19px;text-decoration:none">円</s></div>
+    <div class="keys" id="keys">
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+      <button data-k="00">00</button><button data-k="0">0</button>
+      <button class="bs" data-k="del">⌫</button>
+      <button class="ok" data-k="ok">これでOK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ カレンダー ══ -->
+<div class="sheet" id="calS">
+  <div class="veil" data-x></div>
+  <div class="pane">
+    <div class="calhead">
+      <button id="calPrev">◀</button>
+      <h3 id="calTitle">—</h3>
+      <button id="calNext">▶</button>
+    </div>
+    <div class="legend">
+      <b><u style="background:var(--upbg);border:2px solid var(--up)"></u>記録済み</b>
+      <b><u style="border:2px dashed var(--gold)"></u>まだ</b>
+      <b><u style="background:var(--field)"></u>お休み</b>
+    </div>
+    <div class="cal" id="cal"></div>
+  </div>
+</div>
+
+<!-- ══ レシート ══ -->
+<div class="sheet" id="rcS">
+  <div class="veil" data-x></div>
+  <div class="pane"><h3>レシートを読み取り中</h3>
+    <div class="rc" id="rcB"><div class="scan"><div class="spin"></div>少し待ってください…</div></div>
+  </div>
+</div>
+
+<div class="sheet" id="cfmS">
+  <div class="veil" data-x></div>
+  <div class="pane">
+    <div class="cfm">
+      <p id="cfmT">この日の記録を消しますか？</p>
+      <s id="cfmP">消したあとでも 入れ直せます</s>
+      <div class="cfmb">
+        <button class="no" data-x>やめる</button>
+        <button class="yes" id="cfmY">消す</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="on">
+  <button class="sel" data-go="s-in"><s>📝</s>記録</button>
+  <button data-go="s-dash"><s>📊</s>成績</button>
+</nav>
+
+<script src="config.js"></script>
+<script>
+/* ══════════ 道具 ══════════ */
+const $ = s => document.querySelector(s);
+const WD = ['日','月','火','水','木','金','土'];
+const yen = n => '¥' + Math.round(n).toLocaleString('ja-JP');
+const num = n => Math.round(n).toLocaleString('ja-JP');
+const p2 = n => (n < 10 ? '0' : '') + n;
+const cele_ = $('#cele');
+
+/* 秘密の鍵（URLの ?k=… に入っている） */
+const KEY = new URLSearchParams(location.search).get('k') || localStorage.getItem('kb_key') || '';
+if (KEY) localStorage.setItem('kb_key', KEY);
+
+/* ══════════ 状態 ══════════ */
+let M = null;                          /* 表示中の月のデータ一式（サーバーから） */
+let YM = '';                           /* 表示中の月 'yyyy-MM' */
+let DAY = 1;                           /* 開いている日 */
+let B = [];                            /* その日のお弁当 */
+let C = { food: 0, labor: 0, other: 0 };
+let FX = { rent: 0, util: 0, other: 0 };
+let SEQ = 0, busy = false, restOpen = false;
+const hist = [];
+const LAB = { food: '食材', labor: '人のお金', other: 'その他' };
+
+const todayStr = () => {
+  const t = new Date();
+  return t.getFullYear() + '-' + p2(t.getMonth() + 1) + '-' + p2(t.getDate());
+};
+const dateStr = d => YM + '-' + p2(d);
+const daysInMonth = ym => new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate();
+const isWeekend = dt => dt.getDay() === 0 || dt.getDay() === 6;
+const dateOf = d => new Date(+YM.slice(0, 4), +YM.slice(5, 7) - 1, d);
+
+/* ══════════ 通信 ══════════ */
+async function api(action, data) {
+  if (!GAS_URL) throw new Error('URLが設定されていません');
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   /* json にすると通信できない */
+    body: JSON.stringify(Object.assign({ action: action, key: KEY }, data || {}))
+  });
+  const txt = await res.text();
+  let j;
+  try { j = JSON.parse(txt); }
+  catch (e) { throw new Error('server'); }   /* 200でもエラーHTMLが返ることがある */
+  if (j.error) throw new Error(j.error);
+  return j;
+}
+
+/* 送れなかった保存を貯めておく（電波が無いとき） */
+const PEND = 'kb_pending';
+const getPend = () => { try { return JSON.parse(localStorage.getItem(PEND) || '[]'); } catch (e) { return []; } };
+const setPend = a => localStorage.setItem(PEND, JSON.stringify(a));
+function queue(item) { const a = getPend(); a.push(item); setPend(a); offline(true); }
+async function flush() {
+  let a = getPend();
+  while (a.length) {
+    try { await api(a[0].action, a[0].data); }
+    catch (e) { return false; }
+    a.shift(); setPend(a);
+  }
+  offline(false);
+  return true;
+}
+function offline(on) {
+  $('#offbar').classList.toggle('on', !!on && getPend().length > 0);
+}
+function cacheM() { try { localStorage.setItem('kb_m_' + M.ym, JSON.stringify(M)); } catch (e) {} }
+
+/* ══════════ 起動 ══════════ */
+async function boot() {
+  if (!KEY) return bootErr('このリンクからは ひらけません', false);
+  const t = new Date();
+  YM = t.getFullYear() + '-' + p2(t.getMonth() + 1);
+  DAY = t.getDate();
+  try {
+    await flush();
+    M = await api('getMonth', { ym: YM });
+    cacheM();
+    offline(false);
+  } catch (e) {
+    const c = localStorage.getItem('kb_m_' + YM);
+    if (!c) return bootErr('つながりません。電波を確かめて もう一度 押してください', true);
+    M = JSON.parse(c);
+    offline(true);
+  }
+  FX = { rent: M.fixed.rent, util: M.fixed.util, other: M.fixed.other };
+  $('#boot').classList.add('off');
+  openDay(DAY);
+  renderDash();
+}
+function bootErr(msg, retry) {
+  $('#bootMsg').textContent = msg;
+  $('#bootSpin').style.display = 'none';
+  $('#bootBtn').style.display = retry ? 'block' : 'none';
+}
+$('#bootBtn').onclick = () => location.reload();
+
+/* ══════════ 記録画面 ══════════ */
+function carryPrices(d) {
+  for (let i = d - 1; i >= 1; i--) {
+    const r = M.days[i];
+    if (r && r.status === 'done' && (r.b || []).length) {
+      return r.b.map(x => ({ id: x.id, p: x.p, made: 0, sold: 0 }));
+    }
+  }
+  if (M.lastBentos && M.lastBentos.length) {
+    return M.lastBentos.map(x => ({ id: x.id, p: x.p, made: 0, sold: 0 }));
+  }
+  return [{ id: 'b1', p: 600, made: 0, sold: 0 }];
+}
+
+function openDay(d) {
+  DAY = d;
+  hist.length = 0;
+  restOpen = false;
+  const rec = M.days[d];
+  if (rec && rec.status === 'done') {
+    B = rec.b.map(x => Object.assign({}, x));
+    C = Object.assign({ food: 0, labor: 0, other: 0 }, rec.c);
+  } else {
+    B = carryPrices(d);
+    C = { food: 0, labor: 0, other: 0 };
+  }
+  SEQ = B.reduce((m, b) => Math.max(m, +String(b.id).replace(/\D/g, '') || 0), 0);
+
+  const dt = dateOf(d);
+  $('#dLabel').textContent = (+YM.slice(5, 7)) + '月' + d + '日（' + WD[dt.getDay()] + '）';
+  $('#streak').textContent = M.streak > 0 ? '🔥 ' + M.streak + '日 連続で記録中' : '';
+  $('#savedBar').classList.toggle('on', !!(rec && rec.status === 'done'));
+  const restDay = rec ? rec.status === 'rest' : isWeekend(dt);
+  $('#restBar').classList.toggle('on', restDay && !(rec && rec.status === 'done'));
+  paint();
+  scrollTo(0, 0);
+}
+
+function calc() {
+  const sales = B.reduce((a, b) => a + b.p * Math.min(b.sold, b.made), 0);
+  const spent = C.food + C.labor + C.other;
+  const fx = M ? (M.fixedPerDay || 0) : 0;
+  if (sales === 0 && spent === 0) return { sales: 0, spent: 0, fx: 0, profit: 0 };
+  return { sales: sales, spent: spent, fx: fx, profit: sales - spent - fx };
+}
+
+function paint() {
+  const box = $('#menus'); box.innerHTML = '';
+  B.forEach(b => {
+    const lost = Math.max(0, b.made - b.sold);
+    const d = document.createElement('div');
+    d.className = 'card';
+    d.innerHTML =
+      '<div class="chead">' +
+        '<button class="price tab" data-pad="p:' + b.id + '">' + num(b.p) + '<s>円</s></button>' +
+        '<div class="tagline">のお弁当</div>' +
+        (B.length > 1 ? '<button class="del" data-del="' + b.id + '">✕</button>' : '') +
+      '</div>' +
+      '<div class="row made">' +
+        '<div class="rlab">作った<s>朝に入力</s></div>' +
+        '<button class="sbtn mi" data-b="' + b.id + '" data-f="made" data-d="-1" ' + (b.made ? '' : 'disabled') + '>−</button>' +
+        '<button class="qty" data-pad="made:' + b.id + '"><span class="tab">' + b.made + '</span><s>個</s></button>' +
+        '<button class="sbtn" data-b="' + b.id + '" data-f="made" data-d="1">＋</button>' +
+      '</div>' +
+      '<div class="row">' +
+        '<div class="rlab">売れた<s>夜に入力</s></div>' +
+        '<button class="sbtn mi" data-b="' + b.id + '" data-f="sold" data-d="-1" ' + (b.sold ? '' : 'disabled') + '>−</button>' +
+        '<button class="qty" data-pad="sold:' + b.id + '"><span class="tab">' + b.sold + '</span><s>個</s></button>' +
+        '<button class="sbtn" data-b="' + b.id + '" data-f="sold" data-d="1">＋</button>' +
+      '</div>' +
+      '<div class="foot2">' +
+        '<div class="lo ' + (lost === 0 && b.made > 0 ? 'zero' : '') + '">' +
+          (b.made === 0 ? '作った数を入れてください'
+            : lost === 0 ? '残り <b>0個</b> 完売！ 🎯'
+            : '残り <b>' + lost + '個</b>（' + yen(lost * b.p) + '分）') +
+        '</div>' +
+        '<div class="amt tab ' + (b.sold ? 'on' : '') + '">' + yen(b.p * b.sold) + '</div>' +
+      '</div>';
+    box.appendChild(d);
+  });
+
+  ['food', 'labor', 'other'].forEach(k => {
+    $('[data-pad="' + k + '"] span').textContent = num(C[k]);
+  });
+
+  const r = calc();
+  cnt(r.profit);
+
+  /* 家賃などの1日分 */
+  const fx = M.fixedPerDay || 0;
+  $('#fxNote').textContent = fx > 0 ? '家賃など ' + yen(fx) + ' を引いています' : '';
+
+  /* この前 記録した日と くらべる（まだ何も入れていない日は 出さない） */
+  const prev = prevProfit();
+  const dl = $('#delta');
+  const entered = r.sales > 0 || r.spent > 0;
+  if (prev === null || !entered) {
+    dl.classList.add('off');
+  } else {
+    const dd = r.profit - prev, up = dd >= 0;
+    dl.className = 'dlt ' + (up ? 'up' : 'dn');
+    dl.textContent = 'この前より ' + (up ? '+' : '−') + num(Math.abs(dd)) + '円 ' + (up ? '⬆️' : '⬇️');
+    dl.classList.remove('pop'); void dl.offsetWidth; dl.classList.add('pop');
+  }
+
+  /* 先月ごえ */
+  const goal = M.prevTotalProfit || 0;
+  const g = $('#goal');
+  if (goal <= 0) { g.classList.add('off'); }
+  else {
+    g.classList.remove('off');
+    const cur = cumLive();
+    const rest = goal - cur;
+    $('#gBar').style.width = Math.max(0, Math.min(100, cur / goal * 100)) + '%';
+    $('#gTxt').textContent = rest > 0 ? 'あと ' + yen(rest) : '先月ごえ！🎉';
+    g.style.background = rest > 0 ? 'var(--goldbg)' : 'var(--upbg)';
+    g.style.color = rest > 0 ? '#8A5A11' : 'var(--up)';
+  }
+  $('#undo').disabled = hist.length === 0;
+}
+
+/* 今開いている日の入力も足した、今月の利益の合計 */
+function cumLive() {
+  let t = 0;
+  Object.keys(M.profits).forEach(d => { if (+d !== DAY) t += M.profits[d]; });
+  return t + calc().profit;
+}
+
+/* 直前に記録がある日の利益 */
+function prevProfit() {
+  const d = dateOf(DAY);
+  for (let i = 0; i < 60; i++) {
+    d.setDate(d.getDate() - 1);
+    const k = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+    if (M.profitByDate && M.profitByDate[k] !== undefined) return M.profitByDate[k];
+  }
+  return null;
+}
+
+let shown = 0, raf;
+function cnt(t) {
+  cancelAnimationFrame(raf);
+  const f = shown, t0 = performance.now();
+  (function s(x) {
+    const p = Math.min(1, (x - t0) / 320), e = 1 - Math.pow(1 - p, 3);
+    shown = Math.round(f + (t - f) * e);
+    $('#profit').textContent = yen(shown);
+    if (p < 1) raf = requestAnimationFrame(s);
+  })(t0);
+}
+const snap = () => hist.push({ b: B.map(x => Object.assign({}, x)), c: Object.assign({}, C) });
+
+/* ══════════ ボタン操作 ══════════ */
+document.addEventListener('click', e => {
+  const st = e.target.closest('[data-b]');
+  if (st && !st.disabled) {
+    snap();
+    const b = B.find(x => x.id === st.dataset.b), f = st.dataset.f;
+    b[f] = Math.max(0, b[f] + (+st.dataset.d));
+    if (f === 'sold' && b.made > 0 && b.sold > b.made) { b.sold = b.made; toast('作った数より おおいよ 🤔'); }
+    if (f === 'made' && b.sold > b.made) b.sold = b.made;
+    paint(); return;
+  }
+  const dl = e.target.closest('[data-del]');
+  if (dl) {
+    snap();
+    B.splice(B.findIndex(x => x.id === dl.dataset.del), 1);
+    paint(); toast('お弁当を減らしました'); return;
+  }
+  const pd = e.target.closest('[data-pad]');
+  if (pd) { openPad(pd.dataset.pad); return; }
+  if (e.target.closest('[data-x]')) document.querySelectorAll('.sheet').forEach(s => s.classList.remove('on'));
+
+  const go = e.target.closest('[data-go]');
+  if (go) {
+    document.querySelectorAll('.scr').forEach(s => s.classList.remove('on'));
+    $('#' + go.dataset.go).classList.add('on');
+    document.querySelectorAll('nav button').forEach(x => x.classList.toggle('sel', x === go));
+    $('footer').style.display = go.dataset.go === 's-in' ? 'block' : 'none';
+    if (go.dataset.go === 's-dash') renderDash();
+    scrollTo(0, 0);
+  }
+});
+
+/* 長押しで連打 */
+let hd;
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.sbtn'); if (!b || b.disabled) return;
+  hd = setTimeout(() => { hd = setInterval(() => b.click(), 85); }, 450);
+});
+['pointerup', 'pointerleave', 'pointercancel'].forEach(v =>
+  document.addEventListener(v, () => { clearTimeout(hd); clearInterval(hd); }));
+
+$('#undo').onclick = () => {
+  const s = hist.pop(); if (!s) return;
+  B = s.b.map(x => Object.assign({}, x));
+  C = Object.assign({}, s.c);
+  paint();
+};
+$('#addBento').onclick = () => openPad('new:');
+$('#celeClose').onclick = () => cele_.classList.remove('on');
+
+/* ══════════ 保存 ══════════ */
+$('#save').onclick = async e => {
+  const btn = e.currentTarget;
+  if (busy) return;
+  busy = true;
+  const wasNew = !(M.days[DAY] && M.days[DAY].status === 'done');
+  const bestBefore = (M.allBest === null || M.allBest === undefined) ? null : M.allBest;
+  const data = {
+    date: dateStr(DAY),
+    bentos: B.map(x => Object.assign({}, x)),
+    costs: Object.assign({}, C)
+  };
+  const r = calc();
+  const soldOut = B.length > 0 && B.every(x => x.made > 0 && x.sold === x.made);
+
+  /* 先に画面を進める（母を待たせない） */
+  M.days[DAY] = { status: 'done', b: data.bentos, c: data.costs };
+  localRecalc();
+  hist.length = 0;
+  $('#savedBar').classList.add('on');
+  $('#restBar').classList.remove('on');
+  $('#undo').disabled = true;
+  btn.classList.add('ok');
+  btn.textContent = wasNew ? '✓ 保存しました' : '✓ 直しました';
+
+  try {
+    M = await api('saveDay', data);
+    cacheM();
+    offline(false);
+  } catch (err) {
+    queue({ action: 'saveDay', data: data });
+    toast('あとで もう一度 送ります');
+  }
+  paint(); renderDash();
+
+  setTimeout(() => {
+    if (wasNew && bestBefore !== null && r.profit > bestBefore && r.profit > 0) {
+      cele('🏆', '自己最高記録！', '今までで いちばん もうかった日です');
+    } else if (wasNew && soldOut) {
+      cele('🎯', '完売しました！', '捨てたお弁当は ゼロ。むだが ありません');
+    }
+  }, 400);
+  setTimeout(() => { btn.classList.remove('ok'); btn.textContent = '✓ 保存する'; busy = false; }, 1800);
+};
+
+/* 通信できないときも数字が合うように、手元で計算し直す */
+function localRecalc() {
+  const fx = M.fixedPerDay || 0;
+  const profits = {}, byPrice = {};
+  let sales = 0, profit = 0, sold = 0, made = 0, waste = 0, wasteLoss = 0;
+  Object.keys(M.days).forEach(k => {
+    const rec = M.days[k];
+    if (!rec || rec.status !== 'done') return;
+    let s = 0, m = 0, so = 0, wl = 0;
+    (rec.b || []).forEach(b => {
+      const sd = Math.min(b.sold, b.made);
+      s += b.p * sd; m += b.made; so += sd; wl += (b.made - sd) * b.p;
+      const key = String(b.p);
+      if (!byPrice[key]) byPrice[key] = { p: b.p, made: 0, sold: 0, waste: 0 };
+      byPrice[key].made += b.made; byPrice[key].sold += sd; byPrice[key].waste += (b.made - sd);
+    });
+    const spent = (rec.c.food || 0) + (rec.c.labor || 0) + (rec.c.other || 0);
+    const p = s - spent - fx;
+    profits[k] = p;
+    sales += s; profit += p; sold += so; made += m; waste += (m - so); wasteLoss += wl;
+    M.profitByDate = M.profitByDate || {};
+    M.profitByDate[YM + '-' + p2(+k)] = p;
+  });
+  M.profits = profits;
+  M.stats = Object.assign({}, M.stats, {
+    sales: sales, profit: profit, sold: sold, made: made, waste: waste, wasteLoss: wasteLoss,
+    byPrice: Object.keys(byPrice).map(k => byPrice[k]).sort((a, b) => b.sold - a.sold)
+  });
+}
+
+/* ══════════ 消す・お休み ══════════ */
+let cfmAct = null;
+$('#delDay').onclick = () => {
+  cfmAct = 'del';
+  $('#cfmT').textContent = (+YM.slice(5, 7)) + '月' + DAY + '日の記録を消しますか？';
+  $('#cfmP').textContent = '消したあとでも 入れ直せます';
+  $('#cfmY').textContent = '消す';
+  $('#cfmS').classList.add('on');
+};
+$('#restBtn').onclick = () => {
+  cfmAct = 'rest';
+  $('#cfmT').textContent = (+YM.slice(5, 7)) + '月' + DAY + '日を お休みに しますか？';
+  $('#cfmP').textContent = 'あとで 記録に もどせます';
+  $('#cfmY').textContent = 'お休みにする';
+  $('#cfmS').classList.add('on');
+};
+$('#cfmY').onclick = async () => {
+  $('#cfmS').classList.remove('on');
+  const act = cfmAct === 'rest' ? 'setRest' : 'deleteDay';
+  try {
+    M = await api(act, { date: dateStr(DAY) });
+    cacheM();
+    FX = { rent: M.fixed.rent, util: M.fixed.util, other: M.fixed.other };
+    openDay(DAY); renderDash();
+    toast(cfmAct === 'rest' ? 'お休みに しました' : '記録を 消しました');
+  } catch (e) {
+    toast('もう一度 押してください');
+  }
+};
+$('#unrest').onclick = async () => {
+  const rec = M.days[DAY];
+  if (rec && rec.status === 'rest') {
+    try { M = await api('deleteDay', { date: dateStr(DAY) }); cacheM(); }
+    catch (e) { toast('もう一度 押してください'); return; }
+  }
+  $('#restBar').classList.remove('on');
+  openDay(DAY);
+  toast('この日を 記録できます');
+};
+
+/* ══════════ テンキー ══════════ */
+let pk = '', buf = '';
+function openPad(key) {
+  pk = key; buf = '';
+  const parts = key.split(':');
+  const t = parts[0], id = parts[1];
+  const b = B.find(x => x.id === id);
+  const T = {
+    p: 'お弁当の値段', made: '作った数', sold: '売れた数', new: 'あたらしい お弁当の値段',
+    fx_rent: '家賃（1か月分）', fx_util: '光熱費（1か月分）', fx_other: 'その他（1か月分）'
+  };
+  $('#padT').textContent = T[t] || LAB[key] || '金額';
+  $('#padU').textContent = (t === 'made' || t === 'sold') ? '個' : '円';
+  const cur =
+    t === 'p' ? b.p : t === 'made' ? b.made : t === 'sold' ? b.sold : t === 'new' ? 0 :
+    key === 'fx_rent' ? FX.rent : key === 'fx_util' ? FX.util : key === 'fx_other' ? FX.other :
+    C[key];
+  $('#padV').textContent = num(cur || 0);
+  $('#padS').classList.add('on');
+}
+$('#keys').addEventListener('click', async e => {
+  const k = e.target.closest('[data-k]'); if (!k) return;
+  const v = k.dataset.k;
+
+  if (v === 'ok') {
+    const n = +(buf || 0);
+    const parts = pk.split(':');
+    const t = parts[0], id = parts[1];
+    $('#padS').classList.remove('on');
+
+    if (t === 'fx_rent' || t === 'fx_util' || t === 'fx_other') {
+      FX[t.slice(3)] = n;
+      try {
+        M = await api('saveFixed', { ym: YM, rent: FX.rent, util: FX.util, other: FX.other });
+        cacheM();
+        toast('毎月かかるお金を 直しました');
+      } catch (err) { toast('もう一度 押してください'); }
+      paint(); renderDash();
+      return;
+    }
+
+    snap();
+    if (t === 'new') {
+      if (n > 0) { B.push({ id: 'b' + (++SEQ), p: n, made: 0, sold: 0 }); toast(num(n) + '円のお弁当を ふやしました'); }
+    } else if (t === 'p' || t === 'made' || t === 'sold') {
+      const b = B.find(x => x.id === id);
+      b[t] = n;
+      if (t === 'made' && b.sold > n) b.sold = n;
+      if (t === 'sold' && b.made > 0 && n > b.made) { b.sold = b.made; toast('作った数より おおいよ 🤔'); }
+    } else {
+      C[pk] = n;
+    }
+    paint();
+    return;
+  }
+  if (v === 'del') buf = buf.slice(0, -1);
+  else if (buf.length < 7) buf += v;
+  $('#padV').textContent = num(+(buf || 0));
+});
+
+/* ══════════ カレンダー ══════════ */
+let calYM = '';
+$('#calBtn').onclick = () => { calYM = YM; drawCal(); $('#calS').classList.add('on'); };
+$('#calPrev').onclick = () => { calYM = shiftYM(calYM, -1); drawCal(); };
+$('#calNext').onclick = () => { calYM = shiftYM(calYM, 1); drawCal(); };
+
+function shiftYM(ym, k) {
+  const d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + k, 1);
+  return d.getFullYear() + '-' + p2(d.getMonth() + 1);
+}
+
+function drawCal() {
+  $('#calTitle').textContent = (+calYM.slice(0, 4)) + '年 ' + (+calYM.slice(5, 7)) + '月';
+  const c = $('#cal'); c.innerHTML = '';
+  WD.forEach(w => {
+    const e = document.createElement('div'); e.className = 'wd'; e.textContent = w; c.appendChild(e);
+  });
+  const first = new Date(+calYM.slice(0, 4), +calYM.slice(5, 7) - 1, 1);
+  for (let i = 0; i < first.getDay(); i++) c.appendChild(document.createElement('div'));
+
+  const sameMonth = calYM === YM;
+  const today = todayStr();
+  const last = daysInMonth(calYM);
+  for (let d = 1; d <= last; d++) {
+    const key = calYM + '-' + p2(d);
+    const rec = sameMonth ? M.days[d] : null;
+    const dt = new Date(+calYM.slice(0, 4), +calYM.slice(5, 7) - 1, d);
+    let st;
+    if (rec && rec.status === 'done') st = 'done';
+    else if (rec && rec.status === 'rest') st = 'rest';
+    else if (key > today) st = 'future';
+    else if (isWeekend(dt)) st = 'rest';
+    else if (!sameMonth) st = 'miss';
+    else st = 'miss';
+
+    const b = document.createElement('button');
+    b.className = 'd ' + (st === 'done' ? 'done' : st === 'rest' ? 'rest' : st === 'miss' ? 'miss' : 'fut')
+      + (sameMonth && d === DAY ? ' sel' : '');
+    b.innerHTML = d + (st === 'done' ? '<s>✓</s>' : st === 'miss' ? '<s>！</s>' : st === 'rest' ? '<s>休</s>' : '');
+    if (st !== 'future') {
+      b.onclick = async () => {
+        $('#calS').classList.remove('on');
+        if (calYM !== YM) { await loadMonth(calYM, d); }
+        else { openDay(d); }
+        toast((+calYM.slice(5, 7)) + '月' + d + '日を ひらきました');
+      };
+    }
+    c.appendChild(b);
+  }
+}
+
+/* ══════════ 月を切り替える ══════════ */
+async function loadMonth(ym, day) {
+  try {
+    const p = await api('getMonth', { ym: ym });
+    M = p; YM = ym;
+    cacheM();
+    offline(false);
+  } catch (e) {
+    const c = localStorage.getItem('kb_m_' + ym);
+    if (!c) { toast('つながりません'); return; }
+    M = JSON.parse(c); YM = ym;
+  }
+  FX = { rent: M.fixed.rent, util: M.fixed.util, other: M.fixed.other };
+  const t = todayStr();
+  openDay(day || (t.slice(0, 7) === ym ? +t.slice(8, 10) : 1));
+  renderDash();
+}
+$('#prevM').onclick = () => loadMonth(shiftYM(YM, -1));
+$('#nextM').onclick = () => loadMonth(shiftYM(YM, 1));
+
+/* ══════════ 成績画面 ══════════ */
+let ch1 = null, ch2 = null;
+function renderDash() {
+  if (!M) return;
+  const s = M.stats;
+  $('#mLabel').textContent = (+YM.slice(0, 4)) + '年 ' + (+YM.slice(5, 7)) + '月';
+  $('#mt').textContent = num(s.profit);
+  $('#pSame').textContent = yen(M.prevSameDayCum || 0);
+
+  const diff = s.profit - (M.prevSameDayCum || 0);
+  const pd = $('#pDiff');
+  pd.textContent = (diff >= 0 ? '+' : '−') + yen(Math.abs(diff)).slice(1);
+  pd.className = 'tab' + (diff >= 0 ? '' : ' dn');
+  $('#pMsg').textContent = diff >= 0 ? '先月より 好調 🎉' : '先月に あと少し';
+
+  const goal = M.prevTotalProfit || 0;
+  const race = $('#race');
+  if (goal <= 0) race.classList.add('off');
+  else {
+    race.classList.remove('off');
+    $('#rLeft').textContent = yen(Math.max(0, goal - s.profit));
+    setTimeout(() => { $('#rBar').style.width = Math.max(0, Math.min(100, s.profit / goal * 100)) + '%'; }, 100);
+  }
+
+  $('#sSales').textContent = yen(s.sales);
+  $('#sSold').innerHTML = num(s.sold) + '<span style="font-size:15px">個</span>';
+  $('#sWaste').innerHTML = num(s.waste) + '<span style="font-size:15px">個</span>';
+  $('#sLoss').textContent = yen(s.wasteLoss);
+
+  document.querySelectorAll('#badges .bg').forEach(el => {
+    el.classList.toggle('got', !!(M.badges && M.badges[el.dataset.badge]));
+  });
+
+  const rank = $('#rank'); rank.innerHTML = '';
+  (s.byPrice || []).forEach((b, i) => {
+    const r = document.createElement('div');
+    r.className = 'r';
+    r.innerHTML =
+      '<div class="no">' + (i + 1) + '</div>' +
+      '<div><div style="font-size:19px;font-weight:900">' + num(b.p) + '円のお弁当</div>' +
+      '<div class="lo">作った ' + num(b.made) + '個 ／ 捨てた ' + num(b.waste) + '個</div></div>' +
+      '<div class="ct tab">' + num(b.sold) + '<s>個</s></div>';
+    rank.appendChild(r);
+  });
+  if (!(s.byPrice || []).length) {
+    rank.innerHTML = '<div class="r"><div class="lo">まだ 記録が ありません</div></div>';
+  }
+
+  ['rent', 'util', 'other'].forEach(k => {
+    $('[data-pad="fx_' + k + '"] span').textContent = num(FX[k]);
+  });
+  const total = FX.rent + FX.util + FX.other;
+  $('#fxNote2').textContent = total > 0
+    ? '1か月 ' + yen(total) + ' ÷ 営業 ' + M.businessDays + '日 ＝ 1日 ' + yen(M.fixedPerDay) +
+      '。これを 毎日の もうけから 引いています。'
+    : '入れると、家賃などを 1日ぶんに 割って 毎日の もうけから 引きます。';
+
+  charts();
+}
+
+function charts() {
+  if (typeof Chart === 'undefined') return;
+  const last = daysInMonth(YM);
+  const today = todayStr();
+  const upto = today.slice(0, 7) === YM ? +today.slice(8, 10) : last;
+
+  const cur = [], pre = [], L = [];
+  let a = 0, b = 0;
+  const prevLast = daysInMonth(shiftYM(YM, -1));
+  for (let d = 1; d <= last; d++) {
+    L.push(d + '日');
+    a += (M.profits[d] || 0);
+    cur.push(d <= upto ? a : null);
+    b += (d <= prevLast ? (M.prevProfits[d] || 0) : 0);
+    pre.push(b);
+  }
+  const bars = [];
+  for (let d = 1; d <= last; d++) bars.push(M.profits[d] || 0);
+
+  const base = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 12, weight: '700' }, maxTicksLimit: 5, color: '#4A5D75' } },
+      y: {
+        grid: { color: '#EDF1F6' }, border: { display: false },
+        ticks: {
+          font: { size: 12, weight: '700' }, color: '#4A5D75',
+          callback: v => Math.abs(v) >= 10000 ? (Math.round(v / 1000) / 10) + '万' : v
+        }
+      }
+    }
+  };
+  if (ch1) ch1.destroy();
+  if (ch2) ch2.destroy();
+  ch1 = new Chart($('#c1'), {
+    type: 'line',
+    data: {
+      labels: L, datasets: [
+        { data: pre, borderColor: '#C3CDDA', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, tension: .3 },
+        { data: cur, borderColor: '#0F7A4D', borderWidth: 5, pointRadius: 0, tension: .3, spanGaps: false, fill: true, backgroundColor: 'rgba(15,122,77,.09)' }
+      ]
+    }, options: base
+  });
+  ch2 = new Chart($('#c2'), {
+    type: 'bar',
+    data: {
+      labels: L, datasets: [{
+        data: bars,
+        backgroundColor: bars.map((_, i) => (i + 1) === upto ? '#E8A33D' : '#C3CDDA'),
+        borderRadius: 5, borderSkipped: false
+      }]
+    }, options: base
+  });
+}
+
+/* ══════════ レシート ══════════ */
+$('#camBtn').onclick = () => $('#cam').click();
+$('#cam').onchange = async e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  $('#rcS').classList.add('on');
+  $('#rcB').innerHTML = '<div class="scan"><div class="spin"></div>少し待ってください…</div>';
+  try {
+    const b64 = await shrink(f);
+    const r = await api('ocr', { imageBase64: b64, mimeType: 'image/jpeg' });
+    if (r.amount) rcAsk(r.amount);
+    else rcFail();
+  } catch (err) { rcFail(); }
+};
+function rcAsk(amount) {
+  $('#rcB').innerHTML =
+    '<div class="amt tab">' + yen(amount) + '</div>' +
+    '<p>レシートの金額は これで 合っていますか？</p>' +
+    '<div class="rcb"><button class="n" id="rN">ちがう</button>' +
+    '<button class="y" id="rY">これでOK</button></div>';
+  $('#rY').onclick = () => {
+    snap();
+    C.food += amount;
+    $('#rcS').classList.remove('on');
+    paint();
+    toast('食材に ' + num(amount) + '円 記録しました ✅');
+  };
+  $('#rN').onclick = () => { $('#rcS').classList.remove('on'); openPad('food'); };
+}
+function rcFail() {
+  $('#rcS').classList.remove('on');
+  openPad('food');
+  toast('読み取れませんでした。金額を 入れてください');
+}
+/* 写真を小さくして送る（そのままだと大きすぎる） */
+function shrink(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onerror = reject;
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const max = 1600;
+        let w = img.width, h = img.height;
+        if (Math.max(w, h) > max) {
+          const r = max / Math.max(w, h);
+          w = Math.round(w * r); h = Math.round(h * r);
+        }
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(cv.toDataURL('image/jpeg', 0.7).split(',')[1]);
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+/* ══════════ 小物 ══════════ */
+let tt;
+function toast(m) {
+  const t = $('#toast'); t.textContent = m; t.classList.add('on');
+  clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 2400);
+}
+function cele(ic, t, p) {
+  $('#cIc').textContent = ic; $('#cT').textContent = t; $('#cP').textContent = p;
+  cele_.classList.add('on');
+}
+window.addEventListener('online', () => flush().then(() => { if (M) loadMonth(YM, DAY); }));
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+boot();
+</script>
+</body>
+</html>
