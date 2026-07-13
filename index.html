@@ -22,7 +22,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
 body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
   background:var(--paper);color:var(--ink);font-size:19px;line-height:1.5;font-weight:700;
-  padding-bottom:255px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  padding-bottom:330px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .tab{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 button{font:inherit;color:inherit}
 
@@ -92,8 +92,9 @@ h2 u{margin-left:auto;font-size:13px;font-weight:700;color:var(--soft);text-deco
 .cost .v s{font-size:15px;color:var(--soft);text-decoration:none}
 .note{margin:0 16px 18px;font-size:13px;font-weight:700;color:var(--soft);line-height:1.6}
 
-footer{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--paper);
-  border-top:3px solid var(--ink);padding:11px 16px calc(11px + env(safe-area-inset-bottom))}
+/* 下タブ（69px）の上に置く。0にすると 保存ボタンがタブに隠れて押せない */
+footer{position:fixed;left:0;right:0;bottom:calc(69px + env(safe-area-inset-bottom));
+  z-index:40;background:var(--paper);border-top:3px solid var(--ink);padding:11px 16px}
 .goal{background:var(--goldbg);border-radius:11px;padding:8px 11px;font-size:14px;
   font-weight:900;color:#8A5A11;margin-bottom:8px;display:flex;align-items:center;gap:7px}
 .goal.off{display:none}
@@ -240,7 +241,7 @@ footer{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--paper)
 .rank .ct s{font-size:13px;color:var(--soft);text-decoration:none}
 
 nav{position:fixed;bottom:0;left:0;right:0;z-index:41;display:none;background:var(--paper);
-  border-top:3px solid var(--ink);padding-bottom:env(safe-area-inset-bottom)}
+  border-top:3px solid var(--ink);padding-bottom:env(safe-area-inset-bottom);height:calc(69px + env(safe-area-inset-bottom))}
 nav.on{display:flex}
 nav button{flex:1;min-height:66px;border:none;background:none;font-size:14px;font-weight:900;
   color:var(--soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
