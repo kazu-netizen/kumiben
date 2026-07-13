@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>くみ弁 記録</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#FF0000">
+<meta name="theme-color" content="#12233B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="くみ弁">
@@ -22,7 +22,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
 body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
   background:var(--paper);color:var(--ink);font-size:19px;line-height:1.5;font-weight:700;
-  padding-bottom:255px;-webkit-font-smoothing:antialiased}
+  padding-bottom:255px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .tab{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 button{font:inherit;color:inherit}
 
@@ -32,7 +32,7 @@ header{position:sticky;top:0;z-index:30;background:var(--paper);border-bottom:3p
 .today{font-size:21px;font-weight:900;min-width:0;white-space:nowrap}
 .today em{font-style:normal;font-size:12px;color:var(--gold);display:block;margin-top:-2px}
 .hbtn{background:var(--field);border:2px solid var(--line);border-radius:12px;
-  padding:9px 10px;font-size:14px;min-height:46px;white-space:nowrap;flex:0 0 auto}
+  padding:9px 10px;font-size:14px;min-height:54px;white-space:nowrap;flex:0 0 auto}
 .hbtn.now{margin-left:auto}
 .hbtn:disabled{opacity:.3}
 
@@ -49,7 +49,7 @@ h2 u{margin-left:auto;font-size:13px;font-weight:700;color:var(--soft);text-deco
 .price s{font-size:15px;color:var(--soft);text-decoration:none}
 .price:active{background:var(--field)}
 .tagline{font-size:14px;color:var(--soft);font-weight:700}
-.del{margin-left:auto;width:44px;height:44px;border-radius:12px;border:2px solid var(--line);
+.del{margin-left:auto;width:52px;height:52px;border-radius:12px;border:2px solid var(--line);
   background:var(--paper);color:var(--soft);font-size:18px}
 
 .row{display:flex;align-items:center;gap:9px;margin-bottom:9px}
@@ -302,7 +302,7 @@ nav button.sel{color:var(--ink)}
     <button id="delDay">この日を消す</button>
   </div>
   <div class="rest-note" id="restBar">
-    <span>この日は定休日です</span>
+    <span>この日は お休みです</span>
     <button id="unrest">記録する</button>
   </div>
 
@@ -478,8 +478,12 @@ nav button.sel{color:var(--ink)}
 /* ══════════ 道具 ══════════ */
 const $ = s => document.querySelector(s);
 const WD = ['日','月','火','水','木','金','土'];
-const yen = n => '¥' + Math.round(n).toLocaleString('ja-JP');
-const num = n => Math.round(n).toLocaleString('ja-JP');
+/* マイナスは「−¥1,200」と書く（「¥-1,200」は読みにくい）。色は青（赤は使わない） */
+const yen = n => {
+  const v = Math.round(n) || 0;
+  return (v < 0 ? '−¥' : '¥') + Math.abs(v).toLocaleString('ja-JP');
+};
+const num = n => (Math.round(n) || 0).toLocaleString('ja-JP');
 const p2 = n => (n < 10 ? '0' : '') + n;
 const cele_ = $('#cele');
 
@@ -660,6 +664,9 @@ function paint() {
   const r = calc();
   cnt(r.profit);
 
+  /* 連続記録（保存すると増えるので 毎回書き直す） */
+  $('#streak').textContent = M.streak > 0 ? '🔥 ' + M.streak + '日 連続で記録中' : '';
+
   /* 家賃などの1日分 */
   const fx = M.fixedPerDay || 0;
   $('#fxNote').textContent = fx > 0 ? '家賃など ' + yen(fx) + ' を引いています' : '';
@@ -715,25 +722,37 @@ let shown = 0, raf;
 function cnt(t) {
   cancelAnimationFrame(raf);
   const f = shown, t0 = performance.now();
+  const el = $('#profit');
+  el.style.color = t < 0 ? 'var(--down)' : 'var(--ink)';   /* マイナスは青 */
   (function s(x) {
     const p = Math.min(1, (x - t0) / 320), e = 1 - Math.pow(1 - p, 3);
     shown = Math.round(f + (t - f) * e);
-    $('#profit').textContent = yen(shown);
+    el.textContent = yen(shown);
     if (p < 1) raf = requestAnimationFrame(s);
   })(t0);
 }
 const snap = () => hist.push({ b: B.map(x => Object.assign({}, x)), c: Object.assign({}, C) });
 
 /* ══════════ ボタン操作 ══════════ */
+/* ＋ − を1回ぶん動かす（長押しの連打からも呼ぶ） */
+function step(id, f, d) {
+  const b = B.find(x => x.id === id);
+  if (!b) return;
+  if (f === 'sold' && b.made === 0 && d > 0) { toast('さきに 作った数を 入れてください'); return; }
+  snap();
+  b[f] = Math.max(0, b[f] + d);
+  if (b.sold > b.made) {
+    b.sold = b.made;
+    if (f === 'sold') toast('作った数より おおいよ 🤔');
+  }
+  paint();
+}
+
 document.addEventListener('click', e => {
   const st = e.target.closest('[data-b]');
   if (st && !st.disabled) {
-    snap();
-    const b = B.find(x => x.id === st.dataset.b), f = st.dataset.f;
-    b[f] = Math.max(0, b[f] + (+st.dataset.d));
-    if (f === 'sold' && b.made > 0 && b.sold > b.made) { b.sold = b.made; toast('作った数より おおいよ 🤔'); }
-    if (f === 'made' && b.sold > b.made) b.sold = b.made;
-    paint(); return;
+    step(st.dataset.b, st.dataset.f, +st.dataset.d);
+    return;
   }
   const dl = e.target.closest('[data-del]');
   if (dl) {
@@ -756,14 +775,16 @@ document.addEventListener('click', e => {
   }
 });
 
-/* 長押しで連打 */
-let hd;
+/* 長押しで連打（画面を作り直してもボタンを見失わないように、押した中身を覚えておく） */
+let hd, hdTimer;
 document.addEventListener('pointerdown', e => {
-  const b = e.target.closest('.sbtn'); if (!b || b.disabled) return;
-  hd = setTimeout(() => { hd = setInterval(() => b.click(), 85); }, 450);
+  const btn = e.target.closest('.sbtn');
+  if (!btn || btn.disabled || !btn.dataset.b) return;
+  const id = btn.dataset.b, f = btn.dataset.f, d = +btn.dataset.d;
+  hdTimer = setTimeout(() => { hd = setInterval(() => step(id, f, d), 85); }, 450);
 });
 ['pointerup', 'pointerleave', 'pointercancel'].forEach(v =>
-  document.addEventListener(v, () => { clearTimeout(hd); clearInterval(hd); }));
+  document.addEventListener(v, () => { clearTimeout(hdTimer); clearInterval(hd); }));
 
 $('#undo').onclick = () => {
   const s = hist.pop(); if (!s) return;
@@ -778,6 +799,8 @@ $('#celeClose').onclick = () => cele_.classList.remove('on');
 $('#save').onclick = async e => {
   const btn = e.currentTarget;
   if (busy) return;
+  /* まだ来ていない日は 記録できない */
+  if (dateStr(DAY) > todayStr()) { toast('まだ 先の日は 記録できません'); return; }
   busy = true;
   const wasNew = !(M.days[DAY] && M.days[DAY].status === 'done');
   const bestBefore = (M.allBest === null || M.allBest === undefined) ? null : M.allBest;
@@ -805,7 +828,8 @@ $('#save').onclick = async e => {
     offline(false);
   } catch (err) {
     queue({ action: 'saveDay', data: data });
-    toast('あとで もう一度 送ります');
+    btn.textContent = '✓ 入りました（あとで送ります）';
+    toast('電波が 戻ったら 自動で 送ります');
   }
   paint(); renderDash();
 
@@ -914,7 +938,9 @@ $('#keys').addEventListener('click', async e => {
   const v = k.dataset.k;
 
   if (v === 'ok') {
-    const n = +(buf || 0);
+    /* 何も打たずに「これでOK」＝ 直さずに閉じる（うっかり 0円 にしない） */
+    if (buf === '') { $('#padS').classList.remove('on'); return; }
+    const n = +buf;
     const parts = pk.split(':');
     const t = parts[0], id = parts[1];
     $('#padS').classList.remove('on');
@@ -930,6 +956,11 @@ $('#keys').addEventListener('click', async e => {
       return;
     }
 
+    /* 作った数を入れる前に 売れた数は入れられない */
+    if (t === 'sold') {
+      const b0 = B.find(x => x.id === id);
+      if (b0.made === 0) { toast('さきに 作った数を 入れてください'); return; }
+    }
     snap();
     if (t === 'new') {
       if (n > 0) { B.push({ id: 'b' + (++SEQ), p: n, made: 0, sold: 0 }); toast(num(n) + '円のお弁当を ふやしました'); }
@@ -937,7 +968,7 @@ $('#keys').addEventListener('click', async e => {
       const b = B.find(x => x.id === id);
       b[t] = n;
       if (t === 'made' && b.sold > n) b.sold = n;
-      if (t === 'sold' && b.made > 0 && n > b.made) { b.sold = b.made; toast('作った数より おおいよ 🤔'); }
+      if (t === 'sold' && n > b.made) { b.sold = b.made; toast('作った数より おおいよ 🤔'); }
     } else {
       C[pk] = n;
     }
@@ -952,8 +983,15 @@ $('#keys').addEventListener('click', async e => {
 /* ══════════ カレンダー ══════════ */
 let calYM = '';
 $('#calBtn').onclick = () => { calYM = YM; drawCal(); $('#calS').classList.add('on'); };
-$('#calPrev').onclick = () => { calYM = shiftYM(calYM, -1); drawCal(); };
-$('#calNext').onclick = () => { calYM = shiftYM(calYM, 1); drawCal(); };
+/* 月を変えたら その月のデータを取りに行く（取らないと 記録済みの日が「！」に見えてしまう） */
+$('#calPrev').onclick = async () => { await calMove(-1); };
+$('#calNext').onclick = async () => { await calMove(1); };
+async function calMove(k) {
+  const target = shiftYM(calYM, k);
+  await loadMonth(target, 1, true);
+  calYM = YM;
+  drawCal();
+}
 
 function shiftYM(ym, k) {
   const d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + k, 1);
@@ -969,30 +1007,27 @@ function drawCal() {
   const first = new Date(+calYM.slice(0, 4), +calYM.slice(5, 7) - 1, 1);
   for (let i = 0; i < first.getDay(); i++) c.appendChild(document.createElement('div'));
 
-  const sameMonth = calYM === YM;
   const today = todayStr();
   const last = daysInMonth(calYM);
   for (let d = 1; d <= last; d++) {
     const key = calYM + '-' + p2(d);
-    const rec = sameMonth ? M.days[d] : null;
+    const rec = M.days[d];                 /* いま読み込んでいる月＝calYM */
     const dt = new Date(+calYM.slice(0, 4), +calYM.slice(5, 7) - 1, d);
     let st;
     if (rec && rec.status === 'done') st = 'done';
     else if (rec && rec.status === 'rest') st = 'rest';
     else if (key > today) st = 'future';
     else if (isWeekend(dt)) st = 'rest';
-    else if (!sameMonth) st = 'miss';
     else st = 'miss';
 
     const b = document.createElement('button');
     b.className = 'd ' + (st === 'done' ? 'done' : st === 'rest' ? 'rest' : st === 'miss' ? 'miss' : 'fut')
-      + (sameMonth && d === DAY ? ' sel' : '');
+      + (d === DAY ? ' sel' : '');
     b.innerHTML = d + (st === 'done' ? '<s>✓</s>' : st === 'miss' ? '<s>！</s>' : st === 'rest' ? '<s>休</s>' : '');
     if (st !== 'future') {
-      b.onclick = async () => {
+      b.onclick = () => {
         $('#calS').classList.remove('on');
-        if (calYM !== YM) { await loadMonth(calYM, d); }
-        else { openDay(d); }
+        openDay(d);
         toast((+calYM.slice(5, 7)) + '月' + d + '日を ひらきました');
       };
     }
@@ -1033,7 +1068,8 @@ function renderDash() {
   const pd = $('#pDiff');
   pd.textContent = (diff >= 0 ? '+' : '−') + yen(Math.abs(diff)).slice(1);
   pd.className = 'tab' + (diff >= 0 ? '' : ' dn');
-  $('#pMsg').textContent = diff >= 0 ? '先月より 好調 🎉' : '先月に あと少し';
+  $('#pMsg').textContent = diff >= 0 ? '先月より 好調 🎉'
+    : (diff > -20000 ? '先月に あと少し' : '先月より 少なめ');
 
   const goal = M.prevTotalProfit || 0;
   const race = $('#race');
@@ -1154,7 +1190,8 @@ $('#cam').onchange = async e => {
 function rcAsk(amount) {
   $('#rcB').innerHTML =
     '<div class="amt tab">' + yen(amount) + '</div>' +
-    '<p>レシートの金額は これで 合っていますか？</p>' +
+    '<p>この金額を 食材に <b>たします</b>。<br>合っていますか？<br>' +
+    '<s style="text-decoration:none">（いまの食材 ' + yen(C.food) + ' → ' + yen(C.food + amount) + '）</s></p>' +
     '<div class="rcb"><button class="n" id="rN">ちがう</button>' +
     '<button class="y" id="rY">これでOK</button></div>';
   $('#rY').onclick = () => {

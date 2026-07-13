@@ -2,7 +2,7 @@
    ・画面のファイルだけを保存する
    ・データのやり取り（Apps Script）は保存しない（いつも新しい数字を取りに行く）      */
 
-const CACHE = 'kumiben-v1';
+const CACHE = 'kumiben-v2';
 const SHELL = [
   './',
   './index.html',
@@ -35,16 +35,27 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;                       // 保存の通信はそのまま通す
   if (req.url.indexOf('script.google') >= 0) return;      // データ通信は触らない
 
+  /* 画面本体（index.html）は いつも新しい方を取りに行く。
+     取れなければ 保存してある古い画面を出す（電波が無くても開ける）。
+     アイコンなどは 速さ優先で 保存済みを先に出す。                        */
+  const isPage = req.mode === 'navigate' ||
+    /\/(index\.html)?(\?|$)/.test(new URL(req.url).pathname + (req.url.indexOf('?') >= 0 ? '?' : '')) ||
+    req.url.indexOf('config.js') >= 0;
+
+  const fromNet = fetch(req).then(res => {
+    if (res && res.ok) {
+      const copy = res.clone();
+      caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+    }
+    return res;
+  });
+
+  if (isPage) {
+    e.respondWith(fromNet.catch(() => caches.match(req, { ignoreSearch: true })));
+    return;
+  }
   e.respondWith(
-    caches.match(req, { ignoreSearch: true }).then(hit => {
-      const net = fetch(req).then(res => {
-        if (res && res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
-        }
-        return res;
-      }).catch(() => hit);
-      return hit || net;
-    })
+    caches.match(req, { ignoreSearch: true })
+      .then(hit => hit || fromNet.catch(() => hit))
   );
 });
